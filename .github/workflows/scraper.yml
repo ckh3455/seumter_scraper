@@ -1,0 +1,41 @@
+name: Seumter Scraper
+
+on:
+  workflow_dispatch: # 수동 실행
+  schedule:
+    - cron: '0 15 * * *' # 매일 한국 시간 자정 (UTC 15:00)
+
+jobs:
+  scrape:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run Scraper
+      env:
+        SEUMTER_ID: ${{ secrets.SEUMTER_ID }}
+        SEUMTER_PW: ${{ secrets.SEUMTER_PW }}
+      run: |
+        python seumter_scraper.py
+
+    - name: Commit progress
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add processed.txt
+        git add downloads/
+        git commit -m "Update processed list and downloads" || echo "No changes to commit"
+        git push
